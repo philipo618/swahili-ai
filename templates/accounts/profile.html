@@ -1,0 +1,597 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profile | PD.AI{% endblock %}
+
+{% block content %}
+<style>
+    body { align-items: flex-start; padding: 28px 20px 48px; overflow-y: auto; }
+    .profile-page { width: min(100%, 1040px); margin: 0 auto; }
+
+    .profile-top {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 24px; flex-wrap: wrap; gap: 14px;
+    }
+    .profile-top h1 { font-size: 1.85rem; margin: 8px 0 0; font-weight: 800; letter-spacing: -0.02em; }
+    .profile-top .sub { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+    .back-link {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 11px 18px; border-radius: 14px;
+        background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+        color: #c4b5fd; text-decoration: none; font-weight: 600; font-size: 0.88rem;
+        transition: all 0.25s ease;
+    }
+    .back-link:hover { background: rgba(139,92,246,0.18); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(139,92,246,0.15); }
+
+    /* Hero card with glowing avatar */
+    .profile-hero {
+        display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center;
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: 28px; padding: 28px 32px; margin-bottom: 20px;
+        box-shadow: var(--shadow); backdrop-filter: blur(28px);
+        position: relative; overflow: hidden;
+    }
+    .profile-hero::before {
+        content: ''; position: absolute; top: -50%; right: -20%;
+        width: 400px; height: 400px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(139,92,246,0.12), transparent 70%);
+        pointer-events: none;
+    }
+    @media (max-width: 640px) { .profile-hero { grid-template-columns: 1fr; text-align: center; justify-items: center; } }
+
+    .avatar-master {
+        position: relative; width: 152px; height: 152px; flex-shrink: 0;
+    }
+    .avatar-master .ring-outer {
+        position: absolute; inset: -8px; border-radius: 50%;
+        background: conic-gradient(from 0deg, var(--glow-color,#8b5cf6), #06b6d4, #6366f1, #ec4899, var(--glow-color,#8b5cf6));
+        animation: ringSpin 5s linear infinite;
+        filter: blur(10px); opacity: 0.75;
+    }
+    .avatar-master .ring-mid {
+        position: absolute; inset: -4px; border-radius: 50%;
+        background: conic-gradient(from 180deg, var(--glow-color,#8b5cf6), #22d3ee, #6366f1, var(--glow-color,#8b5cf6));
+        animation: ringSpin 3.5s linear infinite reverse;
+    }
+    .avatar-master .ring-inner {
+        position: absolute; inset: -2px; border-radius: 50%;
+        background: conic-gradient(from 90deg, var(--glow-color,#8b5cf6), #06b6d4, var(--glow-color,#8b5cf6));
+        animation: ringSpin 2.5s linear infinite;
+        box-shadow: 0 0 24px color-mix(in srgb, var(--glow-color,#8b5cf6) 50%, transparent);
+    }
+    @keyframes ringSpin { to { transform: rotate(360deg); } }
+    .avatar-master .avatar-core {
+        position: relative; z-index: 2;
+        width: 152px; height: 152px; border-radius: 50%;
+        object-fit: cover; border: 3px solid rgba(255,255,255,0.2);
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 3.2rem; font-weight: 800; color: white;
+        overflow: hidden;
+    }
+    .avatar-master .avatar-core img { width: 100%; height: 100%; object-fit: cover; }
+
+    .hero-info { min-width: 0; }
+    .hero-info .name-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .hero-info .name { font-size: 1.6rem; font-weight: 800; margin: 0; }
+    .hero-info .handle { color: var(--muted); font-size: 0.95rem; margin: 4px 0 10px; }
+    .hero-info .bio { color: #cbd5e1; font-size: 0.9rem; line-height: 1.65; max-width: 520px; margin-bottom: 16px; }
+
+    .badge-advanced {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 5px 12px; border-radius: 999px; font-size: 0.68rem; font-weight: 800;
+        background: linear-gradient(135deg, rgba(139,92,246,0.35), rgba(6,182,212,0.25));
+        color: #e9d5ff; text-transform: uppercase; letter-spacing: 0.06em;
+        border: 1px solid rgba(139,92,246,0.3);
+        animation: badgePulse 3s ease-in-out infinite;
+    }
+    @keyframes badgePulse { 0%,100%{ box-shadow: 0 0 0 rgba(139,92,246,0); } 50%{ box-shadow: 0 0 16px rgba(139,92,246,0.35); } }
+
+    .stats-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    }
+    @media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    .stat-card {
+        padding: 14px 16px; border-radius: 16px;
+        background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .stat-card:hover { transform: translateY(-2px); border-color: rgba(139,92,246,0.25); }
+    .stat-card .icon { font-size: 1rem; color: #a78bfa; margin-bottom: 6px; }
+    .stat-card .num { font-size: 1.45rem; font-weight: 800; color: #e9d5ff; line-height: 1; }
+    .stat-card .lbl { font-size: 0.72rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    .avatar-crud { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    @media (max-width: 640px) { .avatar-crud { justify-content: center; } }
+    .btn-chip {
+        padding: 9px 16px; border-radius: 12px; border: 1px solid var(--border);
+        background: rgba(255,255,255,0.06); color: var(--text);
+        font-size: 0.82rem; font-weight: 600; cursor: pointer;
+        font-family: 'Inter', sans-serif; transition: all 0.2s ease;
+        display: inline-flex; align-items: center; gap: 7px;
+    }
+    .btn-chip:hover { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.3); }
+    .btn-chip.danger { color: #fecdd3; border-color: rgba(251,113,133,0.35); }
+    .btn-chip.danger:hover { background: rgba(251,113,133,0.15); }
+
+    /* Tabs */
+    .tab-bar {
+        display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap;
+        padding: 6px; border-radius: 16px;
+        background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    }
+    .tab-btn {
+        flex: 1; min-width: 120px; padding: 12px 16px; border: none; border-radius: 12px;
+        background: transparent; color: var(--muted); font-family: 'Inter', sans-serif;
+        font-size: 0.88rem; font-weight: 600; cursor: pointer;
+        transition: all 0.25s ease; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+    .tab-btn.active {
+        background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.2));
+        color: #e9d5ff; border: 1px solid rgba(139,92,246,0.25);
+        box-shadow: 0 4px 16px rgba(99,102,241,0.15);
+    }
+    .tab-btn.locked { opacity: 0.45; cursor: not-allowed; }
+    .tab-panel { display: none; animation: fadeIn 0.35s ease; }
+    .tab-panel.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    .profile-card {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: 24px; padding: 28px; box-shadow: var(--shadow);
+        backdrop-filter: blur(24px);
+    }
+    .card-title {
+        font-size: 1.05rem; font-weight: 700; margin: 0 0 20px;
+        display: flex; align-items: center; gap: 10px;
+    }
+    .card-title i { color: #8b5cf6; width: 20px; text-align: center; }
+
+    .form-grid { display: grid; gap: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+    .field-group label { display: block; font-size: 0.84rem; font-weight: 600; color: #dbeafe; margin-bottom: 6px; }
+    .field-group input, .field-group textarea, .field-group select {
+        width: 100%; padding: 12px 14px; border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.06); color: var(--text);
+        font-family: 'Inter', sans-serif; font-size: 0.9rem; outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .field-group input:focus, .field-group textarea:focus {
+        border-color: rgba(139,92,246,0.5);
+        box-shadow: 0 0 0 3px rgba(139,92,246,0.12);
+    }
+    .field-group input[type="color"] { height: 48px; padding: 4px; cursor: pointer; }
+    .field-group .help { font-size: 0.75rem; color: var(--muted); margin-top: 5px; }
+
+    .glow-preview-row {
+        display: flex; align-items: center; gap: 16px; padding: 16px;
+        border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+        margin-bottom: 16px;
+    }
+    .glow-preview-mini {
+        width: 56px; height: 56px; border-radius: 50%; position: relative; flex-shrink: 0;
+    }
+    .glow-preview-mini::before {
+        content: ''; position: absolute; inset: -3px; border-radius: 50%;
+        background: conic-gradient(from 0deg, var(--glow-color,#8b5cf6), #06b6d4, var(--glow-color,#8b5cf6));
+        animation: ringSpin 3s linear infinite;
+    }
+    .glow-preview-mini .inner {
+        position: relative; z-index: 1; width: 56px; height: 56px; border-radius: 50%;
+        background: linear-gradient(135deg,#6366f1,#8b5cf6);
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 1.2rem; border: 2px solid rgba(255,255,255,0.2);
+    }
+
+    .bubble-preview-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .bubble-preview {
+        padding: 14px 16px; border-radius: 16px; font-size: 0.82rem; line-height: 1.5;
+    }
+    .bubble-preview.user-preview {
+        background: linear-gradient(135deg,#6366f1,#8b5cf6);
+        color: white; text-align: right; border-bottom-right-radius: 4px;
+    }
+    .bubble-preview.ai-preview {
+        background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+        color: #cbd5e1; border-bottom-left-radius: 4px;
+    }
+
+    .preset-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .preset-swatch {
+        width: 36px; height: 36px; border-radius: 10px; border: 2px solid transparent;
+        cursor: pointer; transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .preset-swatch:hover, .preset-swatch.active { transform: scale(1.12); border-color: rgba(255,255,255,0.4); }
+
+    .advanced-lock {
+        text-align: center; padding: 40px 24px;
+        border-radius: 16px; border: 1px dashed rgba(139,92,246,0.3);
+        background: rgba(139,92,246,0.06);
+    }
+    .advanced-lock i { font-size: 2rem; color: #8b5cf6; margin-bottom: 12px; }
+    .advanced-lock p { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; line-height: 1.6; }
+    .advanced-lock a {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 10px 20px; border-radius: 12px;
+        background: linear-gradient(135deg,#6366f1,#8b5cf6);
+        color: white; text-decoration: none; font-weight: 600; font-size: 0.88rem;
+    }
+
+    .primary-btn {
+        padding: 13px 24px; border-radius: 14px; border: none;
+        background: linear-gradient(135deg,#6366f1,#8b5cf6);
+        color: white; font-weight: 700; font-size: 0.92rem;
+        cursor: pointer; font-family: 'Inter', sans-serif;
+        transition: all 0.25s ease; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .primary-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(99,102,241,0.35); }
+
+    .danger-zone {
+        margin-top: 8px; padding: 20px; border-radius: 16px;
+        border: 1px solid rgba(251,113,133,0.25); background: rgba(251,113,133,0.06);
+    }
+    .danger-zone h3 { color: #fecdd3; font-size: 0.95rem; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+    .danger-zone p { color: var(--muted); font-size: 0.84rem; margin: 0 0 14px; line-height: 1.55; }
+    .danger-btn {
+        padding: 11px 18px; border-radius: 12px; border: 1px solid rgba(251,113,133,0.35);
+        background: rgba(251,113,133,0.12); color: #fecdd3;
+        font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
+        transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .danger-btn:hover { background: rgba(251,113,133,0.22); }
+
+    .alert { padding: 12px 16px; border-radius: 12px; margin-bottom: 18px; font-size: 0.9rem; }
+    .alert.success { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+    .alert.error { background: rgba(251,113,133,0.12); border: 1px solid rgba(251,113,133,0.3); color: #fecdd3; }
+    .hidden-file { display: none; }
+
+    .meta-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+    .meta-item { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+</style>
+
+<div class="profile-page">
+    <div class="profile-top">
+        <div>
+            <div class="brand-badge">PD.AI</div>
+            <h1>Profile Center</h1>
+            <p class="sub">Manage your identity, appearance &amp; account</p>
+        </div>
+        <a href="{% url 'chat:chat_home' %}" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Chat
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}error{% else %}success{% endif %}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Hero -->
+    <div class="profile-hero">
+        <div class="avatar-master" id="avatar-master" style="--glow-color: {{ profile.avatar_glow_color|default:'#8b5cf6' }};">
+            <div class="ring-outer"></div>
+            <div class="ring-mid"></div>
+            <div class="ring-inner"></div>
+            <div class="avatar-core" id="avatar-preview">
+                {% if profile.avatar %}
+                    <img src="{{ profile.avatar.url }}" alt="{{ profile.name_display }}" />
+                {% else %}
+                    {{ user.username|first|upper }}
+                {% endif %}
+            </div>
+        </div>
+        <div class="hero-info">
+            <div class="name-row">
+                <h2 class="name">{{ profile.name_display }}</h2>
+                {% if profile.advanced_mode %}
+                    <span class="badge-advanced"><i class="fas fa-bolt"></i> Advanced</span>
+                {% endif %}
+            </div>
+            <div class="handle">@{{ user.username }} · {{ user.email|default:"No email set" }}</div>
+            <p class="bio">{{ profile.bio|default:"No bio yet — tell the world about yourself!" }}</p>
+            <div class="meta-row">
+                <span class="meta-item"><i class="fas fa-calendar"></i> Joined {{ user.date_joined|date:"M Y" }}</span>
+                {% if user.last_login %}
+                <span class="meta-item"><i class="fas fa-clock"></i> Last active {{ user.last_login|timesince }} ago</span>
+                {% endif %}
+            </div>
+            <div class="avatar-crud">
+                <button type="button" class="btn-chip" onclick="document.getElementById('avatar-input').click()">
+                    <i class="fas fa-camera"></i> Upload Photo
+                </button>
+                {% if profile.avatar %}
+                <form method="post" style="display:inline;" onsubmit="return confirm('Remove profile picture?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_avatar">
+                    <button type="submit" class="btn-chip danger"><i class="fas fa-trash"></i> Remove Photo</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" style="margin-bottom: 20px;">
+        <div class="stat-card">
+            <div class="icon"><i class="fas fa-comments"></i></div>
+            <div class="num">{{ chat_count }}</div>
+            <div class="lbl">Chats</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon"><i class="fas fa-message"></i></div>
+            <div class="num">{{ message_count }}</div>
+            <div class="lbl">Messages</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon"><i class="fas fa-file-arrow-up"></i></div>
+            <div class="num">{{ file_count }}</div>
+            <div class="lbl">Files Analyzed</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon"><i class="fas fa-bolt"></i></div>
+            <div class="num">{% if profile.advanced_mode %}ON{% else %}OFF{% endif %}</div>
+            <div class="lbl">Advanced Mode</div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+        <button type="button" class="tab-btn active" data-tab="info" onclick="switchTab('info')">
+            <i class="fas fa-user-edit"></i> Profile Info
+        </button>
+        <button type="button" class="tab-btn {% if not profile.advanced_mode %}locked{% endif %}" data-tab="appearance" onclick="switchTab('appearance')">
+            <i class="fas fa-palette"></i> Appearance
+            {% if not profile.advanced_mode %}<i class="fas fa-lock" style="font-size:0.7rem;"></i>{% endif %}
+        </button>
+        <button type="button" class="tab-btn" data-tab="security" onclick="switchTab('security')">
+            <i class="fas fa-shield-halved"></i> Security
+        </button>
+    </div>
+
+    <!-- Tab: Profile Info (Update CRUD) -->
+    <div class="tab-panel active" id="tab-info">
+        <div class="profile-card">
+            <h3 class="card-title"><i class="fas fa-pen-to-square"></i> Edit Profile</h3>
+            <form method="post" enctype="multipart/form-data" class="form-grid">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update">
+                <input type="file" id="avatar-input" name="avatar" class="hidden-file" accept="image/*" onchange="previewAvatar(this)">
+
+                <div class="form-row">
+                    <div class="field-group">
+                        <label for="id_display_name">Display Name</label>
+                        {{ form.display_name }}
+                    </div>
+                    <div class="field-group">
+                        <label for="id_email">Email</label>
+                        {{ form.email }}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="field-group">
+                        <label for="id_first_name">First Name</label>
+                        {{ form.first_name }}
+                    </div>
+                    <div class="field-group">
+                        <label for="id_last_name">Last Name</label>
+                        {{ form.last_name }}
+                    </div>
+                </div>
+                <div class="field-group">
+                    <label for="id_bio">Bio</label>
+                    {{ form.bio }}
+                </div>
+                <div class="field-group">
+                    <label for="id_avatar_glow_color">Avatar Glow Color</label>
+                    {{ form.avatar_glow_color }}
+                    <div class="help">Live preview updates as you pick a color</div>
+                </div>
+                <button type="submit" class="primary-btn"><i class="fas fa-save"></i> Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tab: Appearance (Advanced Mode only) -->
+    <div class="tab-panel" id="tab-appearance">
+        {% if profile.advanced_mode %}
+        <div class="profile-card">
+            <h3 class="card-title"><i class="fas fa-wand-magic-sparkles"></i> Chat Appearance</h3>
+            <p style="color:var(--muted);font-size:0.88rem;margin:-8px 0 20px;line-height:1.6;">
+                Customize bubble colors and avatar glow. Changes sync to your chat sidebar instantly.
+            </p>
+
+            <div class="glow-preview-row" id="glow-preview-row" style="--glow-color: {{ profile.avatar_glow_color|default:'#8b5cf6' }};">
+                <div class="glow-preview-mini" style="--glow-color: {{ profile.avatar_glow_color|default:'#8b5cf6' }};">
+                    <div class="inner">{{ user.username|first|upper }}</div>
+                </div>
+                <div>
+                    <div style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Avatar Glow Preview</div>
+                    <div style="font-size:0.78rem;color:var(--muted);">Animated conic border around your profile picture</div>
+                </div>
+            </div>
+
+            <form id="appearance-form" class="form-grid">
+                <div class="form-row">
+                    <div class="field-group">
+                        <label for="pref-user-bubble">Your Message Bubble</label>
+                        <input type="color" id="pref-user-bubble" value="#6366f1">
+                    </div>
+                    <div class="field-group">
+                        <label for="pref-ai-bubble">AI Message Bubble</label>
+                        <input type="color" id="pref-ai-bubble" value="#1e1e2e">
+                    </div>
+                </div>
+                <div class="field-group">
+                    <label for="pref-glow-color">Glow Accent Color</label>
+                    <input type="color" id="pref-glow-color" value="{{ profile.avatar_glow_color|default:'#8b5cf6' }}">
+                </div>
+
+                <div class="bubble-preview-row">
+                    <div class="bubble-preview user-preview" id="user-bubble-preview">Your message looks like this</div>
+                    <div class="bubble-preview ai-preview" id="ai-bubble-preview">AI replies look like this</div>
+                </div>
+
+                <div>
+                    <label style="font-size:0.84rem;font-weight:600;color:#dbeafe;display:block;margin-bottom:8px;">Theme Presets</label>
+                    <div class="preset-row">
+                        <button type="button" class="preset-swatch" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)" onclick="applyProfilePreset('purple')" title="Purple"></button>
+                        <button type="button" class="preset-swatch" style="background:linear-gradient(135deg,#06b6d4,#3b82f6)" onclick="applyProfilePreset('cyan')" title="Cyan"></button>
+                        <button type="button" class="preset-swatch" style="background:linear-gradient(135deg,#10b981,#34d399)" onclick="applyProfilePreset('green')" title="Green"></button>
+                        <button type="button" class="preset-swatch" style="background:linear-gradient(135deg,#f59e0b,#ef4444)" onclick="applyProfilePreset('sunset')" title="Sunset"></button>
+                        <button type="button" class="preset-swatch" style="background:linear-gradient(135deg,#ec4899,#8b5cf6)" onclick="applyProfilePreset('pink')" title="Pink"></button>
+                    </div>
+                </div>
+
+                <button type="button" class="primary-btn" onclick="saveAppearance()">
+                    <i class="fas fa-check"></i> Apply &amp; Save to Chat
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <div class="profile-card">
+            <div class="advanced-lock">
+                <div><i class="fas fa-lock"></i></div>
+                <h3 style="margin:0 0 8px;font-size:1.1rem;">Appearance Settings Locked</h3>
+                <p>Enable <strong>Advanced Mode</strong> in the chat sidebar settings to unlock bubble colors, theme presets, and glow customization.</p>
+                <a href="{% url 'chat:chat_home' %}"><i class="fas fa-cog"></i> Go to Chat Settings</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Tab: Security (Delete CRUD) -->
+    <div class="tab-panel" id="tab-security">
+        <div class="profile-card">
+            <h3 class="card-title"><i class="fas fa-key"></i> Account Security</h3>
+            <p style="color:var(--muted);font-size:0.88rem;line-height:1.6;margin-bottom:20px;">
+                Your account is secured with Django authentication. To change your password, contact an administrator or use Django's password reset flow.
+            </p>
+            <div class="meta-row" style="margin-bottom:24px;">
+                <span class="meta-item"><i class="fas fa-user"></i> Username: <strong style="color:#e2e8f0;">{{ user.username }}</strong></span>
+                <span class="meta-item"><i class="fas fa-envelope"></i> Email: <strong style="color:#e2e8f0;">{{ user.email|default:"Not set" }}</strong></span>
+            </div>
+            <div class="danger-zone">
+                <h3><i class="fas fa-exclamation-triangle"></i> Delete Account</h3>
+                <p>Permanently delete your account, profile picture, all chats, messages, and uploaded files. This action cannot be undone.</p>
+                <form method="post" onsubmit="return confirm('Are you absolutely sure? ALL your data will be permanently deleted.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_account">
+                    <button type="submit" class="danger-btn"><i class="fas fa-user-times"></i> Delete My Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    const PRESETS = {
+        purple: { user: '#6366f1', ai: '#1e1e2e', glow: '#8b5cf6' },
+        cyan:   { user: '#06b6d4', ai: '#0c1929', glow: '#06b6d4' },
+        green:  { user: '#10b981', ai: '#0c1f17', glow: '#10b981' },
+        sunset: { user: '#f59e0b', ai: '#1f1410', glow: '#ef4444' },
+        pink:   { user: '#ec4899', ai: '#1a0f18', glow: '#ec4899' },
+    };
+
+    function switchTab(name) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+    }
+
+    function previewAvatar(input) {
+        if (!input.files || !input.files[0]) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('avatar-preview').innerHTML =
+                `<img src="${e.target.result}" alt="Preview" />`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    const glowInput = document.getElementById('id_avatar_glow_color');
+    if (glowInput) {
+        glowInput.addEventListener('input', e => {
+            const c = e.target.value;
+            document.getElementById('avatar-master').style.setProperty('--glow-color', c);
+        });
+    }
+
+    function updateBubblePreviews() {
+        const u = document.getElementById('pref-user-bubble');
+        const a = document.getElementById('pref-ai-bubble');
+        const g = document.getElementById('pref-glow-color');
+        if (!u) return;
+        document.getElementById('user-bubble-preview').style.background =
+            `linear-gradient(135deg, ${u.value}, ${adjustColor(u.value, 30)})`;
+        document.getElementById('ai-bubble-preview').style.background = a.value;
+        document.getElementById('glow-preview-row').style.setProperty('--glow-color', g.value);
+        document.querySelector('.glow-preview-mini').style.setProperty('--glow-color', g.value);
+    }
+
+    function adjustColor(hex, amount) {
+        const num = parseInt(hex.replace('#',''), 16);
+        const r = Math.min(255, (num >> 16) + amount);
+        const g = Math.min(255, ((num >> 8) & 0xFF) + amount);
+        const b = Math.min(255, (num & 0xFF) + amount);
+        return `#${((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1)}`;
+    }
+
+    ['pref-user-bubble','pref-ai-bubble','pref-glow-color'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateBubblePreviews);
+    });
+
+    function applyProfilePreset(name) {
+        const p = PRESETS[name];
+        if (!p) return;
+        document.getElementById('pref-user-bubble').value = p.user;
+        document.getElementById('pref-ai-bubble').value = p.ai;
+        document.getElementById('pref-glow-color').value = p.glow;
+        updateBubblePreviews();
+    }
+
+    async function saveAppearance() {
+        const userHex = document.getElementById('pref-user-bubble').value;
+        const aiHex = document.getElementById('pref-ai-bubble').value;
+        const glowHex = document.getElementById('pref-glow-color').value;
+        const userGrad = `linear-gradient(135deg, ${userHex}, ${adjustColor(userHex, 30)})`;
+        try {
+            const res = await fetch("{% url 'accounts:save_preferences' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({
+                    advanced_mode: true,
+                    user_bubble_color: userGrad,
+                    ai_bubble_color: aiHex,
+                    avatar_glow_color: glowHex,
+                }),
+            });
+            if (res.ok) {
+                alert('Appearance saved! Open chat to see your new colors.');
+            }
+        } catch (e) {
+            alert('Could not save. Please try again.');
+        }
+    }
+
+    {% if profile.advanced_mode %}
+    (async function loadPrefs() {
+        try {
+            const res = await fetch("{% url 'accounts:get_preferences' %}");
+            const data = await res.json();
+            if (data.user_bubble_color && data.user_bubble_color.startsWith('#')) {
+                document.getElementById('pref-user-bubble').value = data.user_bubble_color;
+            }
+            if (data.ai_bubble_color) document.getElementById('pref-ai-bubble').value = data.ai_bubble_color;
+            if (data.avatar_glow_color) document.getElementById('pref-glow-color').value = data.avatar_glow_color;
+            updateBubblePreviews();
+        } catch (e) { /* silent */ }
+    })();
+    {% endif %}
+</script>
+{% endblock %}

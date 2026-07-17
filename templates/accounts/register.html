@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Account | PD.AI{% endblock %}
+
+{% block content %}
+<div class="auth-shell">
+    <div class="auth-card">
+        <div class="auth-hero">
+            <div class="brand-badge">PD.AI</div>
+            <h1>Create your account</h1>
+            <p>Join a refined AI experience designed for fast, elegant collaboration.</p>
+        </div>
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            <div class="field-group">
+                <label for="id_username">Username</label>
+                {{ form.username }}
+            </div>
+            <div class="field-group">
+                <label for="id_email">Email</label>
+                {{ form.email }}
+            </div>
+            <div class="field-group">
+                <label for="id_password1">Password</label>
+                {{ form.password1 }}
+            </div>
+            <div class="field-group">
+                <label for="id_password2">Confirm Password</label>
+                {{ form.password2 }}
+            </div>
+
+            {% if form.errors %}
+                <div class="error-box">Please correct the highlighted fields and try again.</div>
+            {% endif %}
+
+            <button type="submit" class="primary-btn">Create Account</button>
+        </form>
+
+        <div class="auth-footer">
+            <span>Already joined?</span>
+            <a href="{% url 'accounts:login' %}">Sign in</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

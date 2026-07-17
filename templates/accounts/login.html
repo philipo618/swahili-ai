@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In | PD.AI{% endblock %}
+
+{% block content %}
+<div class="auth-shell">
+    <div class="auth-card">
+        <div class="auth-hero">
+            <div class="brand-badge">PD.AI</div>
+            <h1>Welcome back</h1>
+            <p>Access your intelligent workspace and continue your conversations with a premium experience.</p>
+        </div>
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            <div class="field-group">
+                <label for="id_username">Username</label>
+                {{ form.username }}
+            </div>
+            <div class="field-group">
+                <label for="id_password">Password</label>
+                {{ form.password }}
+            </div>
+
+            {% if form.errors %}
+                <div class="error-box">Please check your credentials and try again.</div>
+            {% endif %}
+
+            <button type="submit" class="primary-btn">Sign In</button>
+        </form>
+
+        <div class="auth-footer">
+            <span>New here?</span>
+            <a href="{% url 'accounts:register' %}">Create an account</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
